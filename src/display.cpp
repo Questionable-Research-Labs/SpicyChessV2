@@ -8,14 +8,8 @@ MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES
 // Text parameters
 #define CHAR_SPACING  1 // pixels between characters
 
-// Global message buffers shared by Serial and Scrolling functions
-#define BUF_SIZE  75
-char message[BUF_SIZE] = "Hello!";
-bool newMessageAvailable = true;
 
-
-
-void printText(uint8_t modStart, uint8_t modEnd, char *pMsg)
+void printText(uint8_t modStart, uint8_t modEnd, const char *pMsg)
 // Print the text string to the LED matrix modules specified.
 // Message area is padded with blank columns after printing.
 {
@@ -79,12 +73,5 @@ void printText(uint8_t modStart, uint8_t modEnd, char *pMsg)
 
 void displaySetup()
 {
-  // delay(2000);
   mx.begin();
-
-  // pinMode(DATA_PIN, OUTPUT);
-  // digitalWrite(DATA_PIN, LOW);
-
-  Serial.print("\n[MD_MAX72XX Message Display]\nType a message for the display\nEnd message line with a newline");
-  // delay(2000);
 }
