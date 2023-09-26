@@ -5,8 +5,11 @@
 
 #define BUTTON_PRESS 2
 #define SHOCK_PIN 3
+#define MENU_BUTTON 5
+#define TEST_SHOCK 4
 
 Bounce turnChange = Bounce();
+Bounce menuButton = Bounce();
 
 bool currentTurnWhite = true;
 
@@ -19,16 +22,17 @@ unsigned long whiteLastStart = 0;
 unsigned long blackLastStart = 0;
 
 unsigned long lastShockTime = 0;
-unsigned long ShockTimeSlotLength = 500;
+unsigned long MaxShockTimeSlotLength = 1000;
+unsigned long CurrentTimeslot = 500;
 unsigned long shockTimeEnd = 0;
 
 
-// Runs every 500ms, to decide how long to enable the shock
-int calculateLength(long long timeMilli) {
+// Runs every Xms, to decide how long to enable the shock
+int calculateLength(long long timeMilli, unsigned long CurrentTimeslot) {
   float percentProgress = 1-  ((float)timeMilli / (float)MAX_TIME);
-  int shockLength = (int)(percentProgress * ShockTimeSlotLength);
+  int shockLength = (int)(percentProgress * CurrentTimeslot);
 
-  int normShockLength = max(min(shockLength, (ShockTimeSlotLength*0.5)), 50);
+  int normShockLength = max(min(shockLength, (CurrentTimeslot*0.5)), 50);
 
   float randomChance = random(0,100);
 
@@ -44,10 +48,53 @@ void setup() {
   Serial.println("Booting");
   displaySetup();
 
+  pinMode(TEST_SHOCK, INPUT_PULLUP);
+
+  menuButton.attach(MENU_BUTTON, INPUT_PULLUP);
+  menuButton.interval(15);  // interval in ms
+
   turnChange.attach(BUTTON_PRESS, INPUT_PULLUP);
   turnChange.interval(15);  // interval in ms
 
   pinMode(SHOCK_PIN, OUTPUT);
+  digitalWrite(SHOCK_PIN, LOW);
+
+  printText(0, 3, "5 MIN");
+
+  turnChange.update();
+  while (turnChange.read()) {
+    // Serial.println("Waiting for button press");
+
+    while(digitalRead(TEST_SHOCK) == LOW) {
+      digitalWrite(SHOCK_PIN, HIGH);
+    }
+    digitalWrite(SHOCK_PIN, LOW);
+
+    menuButton.update();
+    if (menuButton.fell()) {
+      // cycle thru times, 9 min 59, 5 min, 3 min, 1 min
+      if (MAX_TIME == 599000) {
+        MAX_TIME = 300000;
+        printText(0, 3, "5 MIN");
+      } else if (MAX_TIME == 300000) {
+        MAX_TIME = 180000;
+        printText(0, 3, "3 MIN");
+      } else if (MAX_TIME == 180000) {
+        MAX_TIME = 60000;
+        printText(0, 3, "1 MIN");
+      } else if (MAX_TIME == 60000) {
+        MAX_TIME = 599000;
+        printText(0, 3, "10 MIN");
+      }
+      Serial.println(MAX_TIME);
+    }
+
+    turnChange.update();
+  }
+
+  whiteTimeMILLS = MAX_TIME;
+  blackTimeMILLS = MAX_TIME;
+  
 
   whiteLastStart = millis();
   blackLastStart = millis();
@@ -94,7 +141,7 @@ void loop() {
     blackLastStart = millis();
   }
 
-  if (whiteTimeMILLS < 0 || blackTimeMILLS < 0) {
+  if (whiteTimeMILLS < 0 || blackTimeMILLS < 0 || whiteTimeMILLS > 1500000 || blackTimeMILLS > 1500000) {
     // Out of time
     endGame();
   }
@@ -110,10 +157,13 @@ void loop() {
   printText(0, 3, outputString);
 
   // Time to work out the shock time
-  if (millis()-lastShockTime > ShockTimeSlotLength) {
+  if (millis()-lastShockTime > CurrentTimeslot) {
+    CurrentTimeslot = random(69, MaxShockTimeSlotLength);
+
     // Calculate a new shock timing
     lastShockTime = millis();
-    long shockLength = calculateLength(currentTurnWhite ? whiteTimeMILLS : blackTimeMILLS);
+    long shockLength = calculateLength(currentTurnWhite ? whiteTimeMILLS : blackTimeMILLS, CurrentTimeslot);
+    
 
     shockTimeEnd = lastShockTime + shockLength;
   } else {
