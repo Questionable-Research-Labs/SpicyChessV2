@@ -7,6 +7,8 @@
 #define SHOCK_PIN 3
 #define MENU_BUTTON 5
 #define TEST_SHOCK 4
+#define WHITE_SHOCK 6
+#define BLACK_SHOCK 7
 
 Bounce turnChange = Bounce();
 Bounce menuButton = Bounce();
@@ -49,15 +51,19 @@ void setup() {
   displaySetup();
 
   pinMode(TEST_SHOCK, INPUT_PULLUP);
+  pinMode(WHITE_SHOCK, OUTPUT);
+  pinMode(BLACK_SHOCK, OUTPUT);
+  pinMode(SHOCK_PIN, OUTPUT);
+
+  digitalWrite(SHOCK_PIN, HIGH);
+  digitalWrite(WHITE_SHOCK, HIGH);
+  digitalWrite(BLACK_SHOCK, HIGH);
 
   menuButton.attach(MENU_BUTTON, INPUT_PULLUP);
   menuButton.interval(15);  // interval in ms
 
   turnChange.attach(BUTTON_PRESS, INPUT_PULLUP);
   turnChange.interval(15);  // interval in ms
-
-  pinMode(SHOCK_PIN, OUTPUT);
-  digitalWrite(SHOCK_PIN, LOW);
 
   printText(0, 3, "5 MIN");
 
@@ -66,9 +72,13 @@ void setup() {
     // Serial.println("Waiting for button press");
 
     while(digitalRead(TEST_SHOCK) == LOW) {
-      digitalWrite(SHOCK_PIN, HIGH);
+      digitalWrite(SHOCK_PIN, LOW);
+      digitalWrite(WHITE_SHOCK, LOW);
+      digitalWrite(BLACK_SHOCK, LOW);
     }
-    digitalWrite(SHOCK_PIN, LOW);
+    digitalWrite(SHOCK_PIN, HIGH);
+    digitalWrite(WHITE_SHOCK, HIGH);
+    digitalWrite(BLACK_SHOCK, HIGH);
 
     menuButton.update();
     if (menuButton.fell()) {
@@ -92,6 +102,8 @@ void setup() {
     turnChange.update();
   }
 
+  digitalWrite(BLACK_SHOCK, LOW);
+  
   whiteTimeMILLS = MAX_TIME;
   blackTimeMILLS = MAX_TIME;
   
@@ -108,12 +120,16 @@ void setup() {
 
 void endGame() {
   Serial.println("Game Over");
-  digitalWrite(SHOCK_PIN, LOW);
+  digitalWrite(SHOCK_PIN, HIGH);
   while (true) {
     if (currentTurnWhite) {
       printText(0, 3, "B WON");
+      digitalWrite(BLACK_SHOCK, HIGH);
+      digitalWrite(WHITE_SHOCK, LOW);
     } else {
       printText(0, 3, "W WON");
+      digitalWrite(WHITE_SHOCK, HIGH);
+      digitalWrite(BLACK_SHOCK, LOW);
     }
   }
 }
@@ -127,10 +143,16 @@ void loop() {
     if (currentTurnWhite) {
       Serial.println("Turn change, now white's turn");
       whiteLastStart = millis();
+      digitalWrite(BLACK_SHOCK, LOW);
+      digitalWrite(WHITE_SHOCK, HIGH);
     } else {
       Serial.println("Turn change, now Black's turn");
       blackLastStart = millis();
+      digitalWrite(BLACK_SHOCK, HIGH);
+      digitalWrite(WHITE_SHOCK, LOW);
     }
+    digitalWrite(SHOCK_PIN, HIGH);
+    
   }
 
   if (currentTurnWhite) {
@@ -168,9 +190,11 @@ void loop() {
     shockTimeEnd = lastShockTime + shockLength;
   } else {
     if (millis() >= shockTimeEnd) {
-      digitalWrite(SHOCK_PIN, LOW);
-    } else {
       digitalWrite(SHOCK_PIN, HIGH);
+      digitalWrite(currentTurnWhite ? WHITE_SHOCK : BLACK_SHOCK, HIGH);
+    } else {
+      digitalWrite(SHOCK_PIN, LOW);
+      digitalWrite(currentTurnWhite ? WHITE_SHOCK : BLACK_SHOCK, LOW);
     }
   }
 }
