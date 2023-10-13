@@ -15,4 +15,4 @@
 #define DATA_PIN  11  // or MOSI
 
 void displaySetup();
-void printText(uint8_t modStart, uint8_t modEnd, const char *pMsg);
+void printText(uint8_t modStart, uint8_t modEnd, const char *pMsg, bool resetScreen = false);

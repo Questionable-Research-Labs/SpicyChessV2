@@ -9,7 +9,7 @@ MD_MAX72XX mx = MD_MAX72XX(HARDWARE_TYPE, DATA_PIN, CLK_PIN, CS_PIN, MAX_DEVICES
 #define CHAR_SPACING  1 // pixels between characters
 
 
-void printText(uint8_t modStart, uint8_t modEnd, const char *pMsg)
+void printText(uint8_t modStart, uint8_t modEnd, const char *pMsg, bool resetScreen = false)
 // Print the text string to the LED matrix modules specified.
 // Message area is padded with blank columns after printing.
 {
@@ -18,6 +18,19 @@ void printText(uint8_t modStart, uint8_t modEnd, const char *pMsg)
   uint16_t  showLen;
   uint8_t   cBuf[8];
   int16_t   col = ((modEnd + 1) * COL_SIZE) - 1;
+
+  if (resetScreen) {
+    // Reinitialise display to counter EMF;
+    // Serial.println(mx.begin());
+
+    mx.control(MD_MAX72XX::controlRequest_t::TEST, 0);                   // no test
+    mx.control(MD_MAX72XX::controlRequest_t::SCANLIMIT, ROW_SIZE - 1);     // scan limit is set to max on startup
+    mx.control(MD_MAX72XX::controlRequest_t::INTENSITY, MAX_INTENSITY / 2);// set intensity to a reasonable value
+    mx.control(MD_MAX72XX::controlRequest_t::DECODE, 0);                 // ensure no decoding (warm boot potential issue)
+    mx.clear();
+    mx.control(MD_MAX72XX::controlRequest_t::SHUTDOWN, 0);               // take the modules out of shutdown mode    
+  }
+  
 
   mx.control(modStart, modEnd, MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
 

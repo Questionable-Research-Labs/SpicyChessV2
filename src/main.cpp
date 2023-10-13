@@ -28,6 +28,7 @@ unsigned long MaxShockTimeSlotLength = 1000;
 unsigned long CurrentTimeslot = 500;
 unsigned long shockTimeEnd = 0;
 
+int displayRefreshCycle = 0;
 
 // Runs every Xms, to decide how long to enable the shock
 int calculateLength(long long timeMilli, unsigned long CurrentTimeslot) {
@@ -176,7 +177,16 @@ void loop() {
   } else {
       sprintf(outputString, formatString, "B", (int)((blackTimeMILLS / 1000) / 60), (int)((blackTimeMILLS / 1000) % 60));
   }
-  printText(0, 3, outputString);
+
+
+  // Only refresh display every N cycles
+  bool refreshDisplay = false;
+  if (displayRefreshCycle == 0) {
+    refreshDisplay = true;
+  }
+  displayRefreshCycle = (displayRefreshCycle + 1) % 3;
+
+  printText(0, 3, outputString, true);
 
   // Time to work out the shock time
   if (millis()-lastShockTime > CurrentTimeslot) {
